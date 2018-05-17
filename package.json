@@ -1,18 +1,42 @@
 {
   "name": "lean-tcg",
-  "version": "1.0.0",
-  "description": "",
+  "version": "2.0.0",
+  "description": "rename stuff mkii",
+  "repository": "jeffreysbrother/lean-tcg",
+  "author": "james cool",
+  "license": "ISC",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "james cool",
-  "license": "ISC",
+  "keywords": [
+    "The Control Group",
+    "TCG",
+    "front-end",
+    "automation",
+    "rename",
+    "utility",
+    "copy",
+    "file names",
+    "duplicate",
+    "split test",
+    "splittest",
+    "A/B",
+    "optimization",
+    "chalk",
+    "fs-extra",
+    "extfs",
+    "shelljs",
+    "simple-git",
+    "James Cool",
+    "jeffreysbrother"
+  ],
   "dependencies": {
-    "chalk": "^2.1.0",
-    "fs-extra": "^4.0.1",
-    "inquirer": "^3.2.2",
-    "shelljs": "^0.7.8",
-    "simple-git": "^1.75.0"
+    "chalk": "^2.4.1",
+    "extfs": "0.0.7",
+    "inquirer": "^5.2.0",
+    "fs-extra": "^5.0.0",
+    "shelljs": "^0.8.2",
+    "simple-git": "^1.92.0"
   }
 }
