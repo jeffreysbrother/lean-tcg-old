@@ -326,13 +326,13 @@ prompt(questions).then(answers => {
 
   (function rename() {
 		pathsToNewVariations.forEach(variation => {
-			fse.readdir(variation, (err, files) => {
+			fse.readdirSync(variation, (err, files) => {
 	      // skip hidden files
 	      files = files.filter(item => !(ignoreHiddenFiles).test(item));
 	      files.forEach(file => {
 	        let fullPath = `${variation}/${file}`,
 						newPart = basename(dirname(fullPath));
-					fse.rename(fullPath, fullPath.replace(originalDir, newPart)), err => {
+					fs.rename(fullPath, fullPath.replace(originalDir, newPart)), err => {
 						if (err) throw err;
 					};
 	      });
@@ -355,7 +355,7 @@ prompt(questions).then(answers => {
 	(function insertPHPComment() {
 		if (!args.includes('--skip-comment')) {
 			pathsToNewVariations.forEach(variation => {
-				fse.readdirSync(variation, (err, files) => {
+				fse.readdir(variation, (err, files) => {
 					// skip hidden files
 					files = files.filter(item => !(ignoreHiddenFiles).test(item));
 					files.forEach(file => {
