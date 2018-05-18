@@ -1,11 +1,11 @@
 'use strict';
 const fse = require('fs-extra'),
 	fs = require('extfs'),
-	chalk = require('chalk'),
-	path = require('path'),
 	simpleGit = require('simple-git'),
-	shell = require('shelljs'),
-	inquirer = require('inquirer'),
+	{ yellow, red } = require('chalk'),
+	{ basename, dirname, extname } = require('path'),
+	{ exec } = require('shelljs'),
+	{ prompt } = require('inquirer'),
 
 	args = process.argv,
 	cwd = process.cwd(),
@@ -23,16 +23,16 @@ let isGit = true,
 	howMany,
 	originalNamespace,
 	pathToOriginalDir,
-	pathsToNewVariations = [],
 	pathToNewDev,
-	existingDirs = [],
-	newSuffixes = [],
 	blurb,
 	newBranch,
 	lastSuffix,
 	emptyFile,
 	createConfig = '',
 	inputJSONinitials,
+	pathsToNewVariations = [],
+	existingDirs = [],
+	newSuffixes = [],
 	configMissing = false,
 	fileToReplace = true;
 
@@ -54,16 +54,16 @@ let isGit = true,
 			];
 
 			dirStubs.forEach(dir => {
-				shell.exec(`mkdir -p ${dir}`);
+				exec(`mkdir -p ${dir}`);
 				extensions.forEach(ext => {
 					fs.closeSync(fs.openSync(`${dir}/${dir.slice(-5)}${ext}`, 'w'));
 				});
 			});
 
-			console.log(chalk.yellow(`Directory structure and files generated!\nPlease move into the funnel/ directory and run \'yo tcg\'`));
+			console.log(yellow(`Directory structure and files generated!\nPlease move into the funnel/ directory and run \'yo tcg\'`));
 			process.exit();
 		} else {
-			console.log(chalk.red('funnel/ directory already exists! Aborting.'));
+			console.log(red('funnel/ directory already exists! Aborting.'));
 			process.exit();
 		}
 	}
@@ -86,7 +86,7 @@ let isGit = true,
 		pathToConfig = `${cwd}/config.json`;
 
 	  if (emptyFile === true) {
-	    console.log(chalk.red('Your config.json is empty!! Please see README for details.'));
+	    console.log(red('Your config.json is empty!! Please see README for details.'));
 	    process.exit();
 	  }
 
@@ -97,21 +97,21 @@ let isGit = true,
 				// try to set devInitials
 				devInitials = require(pathToConfig).developer.replace(/\s/g,'');
 				if (devInitials === '') {
-					console.log(chalk.red('Please specify your initials in config.json'));
+					console.log(red('Please specify your initials in config.json'));
 					process.exit();
 				}
 			} catch(e) {
-				console.log(chalk.red('config.json is misconfigured! See README for more details.'));
+				console.log(red('config.json is misconfigured! See README for more details.'));
 				process.exit();
 			}
 		} catch(e) {
 			// if JSON is invalid
-			console.log(chalk.red('config.json is invalid. Please fix and try again.'));
+			console.log(red('config.json is invalid. Please fix and try again.'));
 			process.exit();
 		}
 
 	} else {
-		console.log(chalk.red('Your config.json is missing!!'));
+		console.log(red('Your config.json is missing!!'));
 		configMissing = true;
 	}
 })();
@@ -133,7 +133,7 @@ const questions = [{
 		if (value.match(configRule)) {
 			return true;
 		} else {
-			console.log(chalk.yellow(' Please enter exactly two alphabetical characters.'));
+			console.log(yellow(' Please enter exactly two alphabetical characters.'));
 		}
 	}
 },{
@@ -146,11 +146,11 @@ const questions = [{
 	},
   validate: value => {
 		if (value === '' || !value.replace(/\s/g, '').length) {
-			console.log(chalk.yellow(' Please enter a valid name.'));
+			console.log(yellow(' Please enter a valid name.'));
 		} else if (fse.existsSync(`${pathToSection}/${value}`)) {
       return true;
     } else {
-      console.log(chalk.yellow(" Section doesn't exist!"));
+      console.log(yellow(" Section doesn't exist!"));
       return false;
     }
   }
@@ -167,7 +167,7 @@ const questions = [{
     if (value.match(restrictUserInputPattern)) {
       return true;
     } else {
-      console.log(chalk.yellow(' Invalid directory name!'));
+      console.log(yellow(' Invalid directory name!'));
       return false;
     }
   }
@@ -182,16 +182,16 @@ const questions = [{
 	validate: value => {
 		if (!isNaN(parseFloat(value)) && isFinite(value) && value % 1 === 0) {
 			if (parseFloat(value) === 0) {
-				console.log(chalk.yellow(' What? You don\'t want that.'));
+				console.log(yellow(' What? You don\'t want that.'));
 				return false;
 			} else if (parseFloat(value) > 10) {
-				console.log(chalk.yellow(' Too many variations!'));
+				console.log(yellow(' Too many variations!'));
 				return false;
 			} else {
 				return true;
 			}
 		} else {
-			console.log(chalk.yellow(' Please enter a whole number.'));
+			console.log(yellow(' Please enter a whole number.'));
 			return false;
 		}
 	}
@@ -205,14 +205,14 @@ const questions = [{
 	},
 	validate: value => {
 		if (value === '' || value === 'undefined') {
-			console.log(chalk.yellow(' Invalid name!'));
+			console.log(yellow(' Invalid name!'));
 		} else {
 			return true;
 		}
 	}
 }];
 
-inquirer.prompt(questions).then(answers => {
+prompt(questions).then(answers => {
 	section = answers.section;
   originalDir = answers.originalDir;
 	howMany = answers.howMany;
@@ -222,7 +222,7 @@ inquirer.prompt(questions).then(answers => {
 
 	(function abandon() {
 		if (createConfig === false) {
-			console.log(chalk.yellow('Please create your config.json file and try again. Aborting.'));
+			console.log(yellow('Please create your config.json file and try again. Aborting.'));
 			process.exit();
 		}
 	})();
@@ -233,7 +233,7 @@ inquirer.prompt(questions).then(answers => {
 				filePath = `${cwd}/config.json`;
 			fs.writeFile(filePath, fileContent, err => {
 				if (err) throw err;
-				console.log(chalk.yellow('config.json created!'));
+				console.log(yellow('config.json created!'));
 			});
 		}
 	})();
@@ -298,12 +298,12 @@ inquirer.prompt(questions).then(answers => {
 	(function checkBranch() {
 		if (!args.includes('--skip-git') && isGit === true) {
 			// check if the branch already exists locally
-			if (shell.exec(`git rev-parse --verify --quiet \'${newBranch}\'`, {silent:true}).length > 0) {
-				console.log(chalk.yellow('ERROR: local branch already exists. Terminating process.'));
+			if (exec(`git rev-parse --verify --quiet \'${newBranch}\'`, {silent:true}).length > 0) {
+				console.log(yellow('ERROR: local branch already exists. Terminating process.'));
 				process.exit();
 			// check if the branch already exists remotely
-			} else if (shell.exec(`git ls-remote --heads origin \'${newBranch}\'`, {silent:true}).length > 0) {
-				console.log(chalk.yellow('ERROR: remote branch already exists. Terminating process.'));
+			} else if (exec(`git ls-remote --heads origin \'${newBranch}\'`, {silent:true}).length > 0) {
+				console.log(yellow('ERROR: remote branch already exists. Terminating process.'));
 				process.exit();
 			}
 		}
@@ -312,7 +312,7 @@ inquirer.prompt(questions).then(answers => {
   (function copy() {
 		pathsToNewVariations.forEach(variation => {
 			if (!fse.existsSync(pathToOriginalDir)) {
-	      console.log(chalk.yellow(`${originalDir} doesn't exist! Aborting.`));
+	      console.log(yellow(`${originalDir} doesn't exist! Aborting.`));
 	      process.exit();
 	    } else {
 				try {
@@ -331,7 +331,7 @@ inquirer.prompt(questions).then(answers => {
 	      files = files.filter(item => !(ignoreHiddenFiles).test(item));
 	      files.forEach(file => {
 	        let fullPath = `${variation}/${file}`,
-						newPart = path.basename(path.dirname(fullPath));
+						newPart = basename(dirname(fullPath));
 					fse.rename(fullPath, fullPath.replace(originalDir, newPart)), err => {
 						if (err) throw err;
 					};
@@ -342,12 +342,12 @@ inquirer.prompt(questions).then(answers => {
 
 	(function message() {
 		let items = [];
-		pathsToNewVariations.forEach(variation => items.push(path.basename(variation)));
+		pathsToNewVariations.forEach(variation => items.push(basename(variation)));
 		if (items.length > 0) {
-			console.log(chalk.yellow(`${howMany} variation${(items.length > 1) ? 's' : ''} created: ${items}.`));
+			console.log(yellow(`${howMany} variation${(items.length > 1) ? 's' : ''} created: ${items}.`));
 		} else {
 			// not sure if this is the best place for this error message
-			console.log(chalk.red('Something went wrong. Zero variations created.'));
+			console.log(red('Something went wrong. Zero variations created.'));
 			process.exit();
 		}
 	})();
@@ -360,7 +360,7 @@ inquirer.prompt(questions).then(answers => {
 					files = files.filter(item => !(ignoreHiddenFiles).test(item));
 					files.forEach(file => {
 						let newFile = `${variation}/${file}`;
-						if (path.extname(newFile) === '.php') {
+						if (extname(newFile) === '.php') {
 							fs.readFile(newFile, 'utf8', (err, data) => {
 								if (err) throw err;
 								if (data.indexOf('<!-- copied from') >= 0) {
@@ -371,7 +371,7 @@ inquirer.prompt(questions).then(answers => {
 								  });
 									// log this message only once
 									if (fileToReplace === true) {
-										console.log(chalk.yellow('existing comment replaced.'));
+										console.log(yellow('existing comment replaced.'));
 										fileToReplace = false;
 									}
 							  } else {
@@ -390,14 +390,14 @@ inquirer.prompt(questions).then(answers => {
 			try {
 				simpleGit()
 					.checkoutBranch(newBranch, 'master', (err, result) => {
-						console.log(chalk.yellow(`Switched to new branch ${newBranch}`));
+						console.log(yellow(`Switched to new branch ${newBranch}`));
 					})
 					.add('./*')
 					.commit(`copied ${originalDir}`, (err, result) => {
-						console.log(chalk.yellow('Changes staged and committed'));
+						console.log(yellow('Changes staged and committed'));
 					})
 					.push(['-u', 'origin', `${newBranch}`], (err, result) => {
-						console.log(chalk.yellow('Pushed!'));
+						console.log(yellow('Pushed!'));
 					});
 			} catch (err) {
 				console.log(err);
