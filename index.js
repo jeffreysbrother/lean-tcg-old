@@ -220,6 +220,77 @@ prompt(questions).then(answers => {
 	createConfig = answers.createConfig;
 	inputJSONinitials = answers.inputJSONinitials;
 
+	function configCreatedMessage(err) {
+		if (err) throw err;
+		console.log(yellow('config.json created!'));
+	}
+
+	function copyIt(variation) {
+		if (!fse.existsSync(pathToOriginalDir)) {
+			console.log(yellow(`${originalDir} doesn't exist! Aborting.`));
+			process.exit();
+		} else {
+			try {
+				fse.copySync(pathToOriginalDir, variation);
+			} catch (err) {
+				console.log(err);
+			}
+		}
+	}
+
+	function throwErr(err) {
+		if (err) throw err;
+	}
+
+	function replaceIt(file) {
+		let fullPath = `${variation}/${file}`,
+			newPart = basename(dirname(fullPath));
+		fs.rename(fullPath, fullPath.replace(originalDir, newPart), throwErr);
+	}
+
+	function skipHiddenFiles(files) {
+		files = files.filter(item => !(ignoreHiddenFiles).test(item));
+	}
+
+	function filterAndForEach(err, files) {
+		skipHiddenFiles(files);
+		files.forEach(replaceIt);
+		console.log(files);
+		process.exit();
+	}
+
+	function reading(variation) {
+		fse.readdirSync(variation, filterAndForEach);
+	}
+
+	function writingAndAppending(err, data) {
+		if (err) throw err;
+		if (data.indexOf('<!-- copied from') >= 0) {
+			let commentRegEx = /(\<\!\-{2}\scopied\sfrom\s.{0,6}\s\-{2}\>)/g,
+				replacement = data.replace(commentRegEx, `<!-- copied from ${originalDir} -->`);
+			fs.writeFile(newFile, replacement, 'utf8', throwErr);
+			// log this message only once
+			if (fileToReplace === true) {
+				console.log(yellow('existing comment replaced.'));
+				fileToReplace = false;
+			}
+		} else {
+			fs.appendFileSync(newFile, `<!-- copied from ${originalDir} -->`);
+		}
+	}
+
+	function ifPHP(variation, file) {
+		let newFile = `${variation}/${file}`;
+		if (extname(newFile) === '.php') {
+			fs.readFile(newFile, 'utf8', writingAndAppending);
+		}
+	}
+
+	function forEachPHP(err, files) {
+		skipHiddenFiles(files);
+		files.forEach(ifPHP);
+	}
+
 	(function abandon() {
 		if (createConfig === false) {
 			console.log(yellow('Please create your config.json file and try again. Aborting.'));
@@ -231,10 +302,7 @@ prompt(questions).then(answers => {
 		if (inputJSONinitials) {
 			let fileContent = `{\n\t"developer": "${inputJSONinitials}"\n}`,
 				filePath = `${cwd}/config.json`;
-			fs.writeFile(filePath, fileContent, err => {
-				if (err) throw err;
-				console.log(yellow('config.json created!'));
-			});
+			fs.writeFile(filePath, fileContent, configCreatedMessage);
 		}
 	})();
 
@@ -309,35 +377,12 @@ prompt(questions).then(answers => {
 		}
 	})();
 
-  (function copy() {
-		pathsToNewVariations.forEach(variation => {
-			if (!fse.existsSync(pathToOriginalDir)) {
-	      console.log(yellow(`${originalDir} doesn't exist! Aborting.`));
-	      process.exit();
-	    } else {
-				try {
-	        fse.copySync(pathToOriginalDir, variation);
-	      } catch (err) {
-	        console.log(err);
-	      }
-			}
-		});
+  (function toEachVariation() {
+		pathsToNewVariations.forEach(copyIt);
   })();
 
   (function rename() {
-		pathsToNewVariations.forEach(variation => {
-			fse.readdirSync(variation, (err, files) => {
-	      // skip hidden files
-	      files = files.filter(item => !(ignoreHiddenFiles).test(item));
-	      files.forEach(file => {
-	        let fullPath = `${variation}/${file}`,
-						newPart = basename(dirname(fullPath));
-					fs.rename(fullPath, fullPath.replace(originalDir, newPart)), err => {
-						if (err) throw err;
-					};
-	      });
-	    });
-		});
+		pathsToNewVariations.forEach(reading);
   })();
 
 	(function message() {
@@ -355,32 +400,7 @@ prompt(questions).then(answers => {
 	(function insertPHPComment() {
 		if (!args.includes('--skip-comment')) {
 			pathsToNewVariations.forEach(variation => {
-				fse.readdir(variation, (err, files) => {
-					// skip hidden files
-					files = files.filter(item => !(ignoreHiddenFiles).test(item));
-					files.forEach(file => {
-						let newFile = `${variation}/${file}`;
-						if (extname(newFile) === '.php') {
-							fs.readFile(newFile, 'utf8', (err, data) => {
-								if (err) throw err;
-								if (data.indexOf('<!-- copied from') >= 0) {
-									let commentRegEx = /(\<\!\-{2}\scopied\sfrom\s.{0,6}\s\-{2}\>)/g,
-										replacement = data.replace(commentRegEx, `<!-- copied from ${originalDir} -->`);
-									fs.writeFile(newFile, replacement, 'utf8', err => {
-								    if (err) throw err;
-								  });
-									// log this message only once
-									if (fileToReplace === true) {
-										console.log(yellow('existing comment replaced.'));
-										fileToReplace = false;
-									}
-							  } else {
-									fs.appendFileSync(newFile, `<!-- copied from ${originalDir} -->`);
-								}
-							});
-						}
-					});
-				});
+				fse.readdir(variation, forEachPHP);
 			});
 		}
 	})();
@@ -404,4 +424,5 @@ prompt(questions).then(answers => {
 			}
 		}
 	})();
+
 });
