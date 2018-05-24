@@ -246,21 +246,9 @@ prompt(questions).then(answers => {
 		if (err) throw err;
 	}
 
-
-
 	function skipHiddenFiles(files) {
 		files = files.filter(item => !(ignoreHiddenFiles).test(item));
 	}
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -405,8 +393,6 @@ prompt(questions).then(answers => {
 
 
 
-
-
 	// MESSAGING ---------------------------
 	let items = [];
 	pathsToNewVariations.forEach(variation => items.push(basename(variation)));
@@ -418,9 +404,6 @@ prompt(questions).then(answers => {
 		process.exit();
 	}
 	// END MESSAGING ---------------------------
-
-
-
 
 
 
@@ -445,6 +428,5 @@ prompt(questions).then(answers => {
 		}
 		// END GIT ---------------------------
 	}, 50);
-
 
 });
