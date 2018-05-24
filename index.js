@@ -36,85 +36,89 @@ let isGit = true,
 	configMissing = false,
 	fileToReplace = true;
 
-(function initializing() {
-	if (args.includes('--create-tree')) {
-		if (!fse.existsSync(`${cwd}/funnel`)) {
-			const dirStubs = [
-				'funnel/source/sections/home/ga/ga-01',
-				'funnel/source/sections/home/bm/bm-01',
-				'funnel/source/sections/report-review/ga/ga-01',
-				'funnel/source/sections/report-review/ga/ga-02',
-				'funnel/source/sections/report-review/jc/jc-01'
-			];
 
-			const extensions = [
-				'.php',
-				'.js',
-				'.less'
-			];
 
-			dirStubs.forEach(dir => {
-				exec(`mkdir -p ${dir}`);
-				extensions.forEach(ext => {
-					fs.closeSync(fs.openSync(`${dir}/${dir.slice(-5)}${ext}`, 'w'));
-				});
+// INITIALIZATION ---------------------------
+if (args.includes('--create-tree')) {
+	if (!fse.existsSync(`${cwd}/funnel`)) {
+		const dirStubs = [
+			'funnel/source/sections/home/ga/ga-01',
+			'funnel/source/sections/home/bm/bm-01',
+			'funnel/source/sections/report-review/ga/ga-01',
+			'funnel/source/sections/report-review/ga/ga-02',
+			'funnel/source/sections/report-review/jc/jc-01'
+		];
+
+		const extensions = [
+			'.php',
+			'.js',
+			'.less'
+		];
+
+		dirStubs.forEach(dir => {
+			exec(`mkdir -p ${dir}`);
+			extensions.forEach(ext => {
+				fs.closeSync(fs.openSync(`${dir}/${dir.slice(-5)}${ext}`, 'w'));
 			});
+		});
 
-			console.log(yellow(`Directory structure and files generated!\nPlease move into the funnel/ directory and run \'yo tcg\'`));
-			process.exit();
-		} else {
-			console.log(red('funnel/ directory already exists! Aborting.'));
-			process.exit();
-		}
+		console.log(yellow(`Directory structure and files generated!\nPlease move into the funnel/ directory and run \'yo tcg\'`));
+		process.exit();
+	} else {
+		console.log(red('funnel/ directory already exists! Aborting.'));
+		process.exit();
 	}
+}
 
-	// if no .git file is found (if not a Git repository)
-	if (!fse.existsSync(`${cwd}/.git`)) {
-		isGit = false;
-	}
+// if no .git file is found (if not a Git repository)
+if (!fse.existsSync(`${cwd}/.git`)) {
+	isGit = false;
+}
 
-	if (!args.includes('--skip-git') && isGit === true) {
-		simpleGit()
-		.checkout('master')
-		.pull('origin', 'master');
-	}
+if (!args.includes('--skip-git') && isGit === true) {
+	simpleGit()
+	.checkout('master')
+	.pull('origin', 'master');
+}
 
-	emptyFile = fs.isEmptySync(`${cwd}/config.json`);
+emptyFile = fs.isEmptySync(`${cwd}/config.json`);
 
-	// check if config.json exists
-	if (fse.existsSync(`${cwd}/config.json`)) {
-		pathToConfig = `${cwd}/config.json`;
+// check if config.json exists
+if (fse.existsSync(`${cwd}/config.json`)) {
+	pathToConfig = `${cwd}/config.json`;
 
-	  if (emptyFile === true) {
-	    console.log(red('Your config.json is empty!! Please see README for details.'));
-	    process.exit();
-	  }
+  if (emptyFile === true) {
+    console.log(red('Your config.json is empty!! Please see README for details.'));
+    process.exit();
+  }
 
+	try {
+		// try to get contents of JSON
+		jsonContents = JSON.parse(fse.readFileSync(pathToConfig, 'utf8'));
 		try {
-			// try to get contents of JSON
-			jsonContents = JSON.parse(fse.readFileSync(pathToConfig, 'utf8'));
-			try {
-				// try to set devInitials
-				devInitials = require(pathToConfig).developer.replace(/\s/g,'');
-				if (devInitials === '') {
-					console.log(red('Please specify your initials in config.json'));
-					process.exit();
-				}
-			} catch(e) {
-				console.log(red('config.json is misconfigured! See README for more details.'));
+			// try to set devInitials
+			devInitials = require(pathToConfig).developer.replace(/\s/g,'');
+			if (devInitials === '') {
+				console.log(red('Please specify your initials in config.json'));
 				process.exit();
 			}
 		} catch(e) {
-			// if JSON is invalid
-			console.log(red('config.json is invalid. Please fix and try again.'));
+			console.log(red('config.json is misconfigured! See README for more details.'));
 			process.exit();
 		}
-
-	} else {
-		console.log(red('Your config.json is missing!!'));
-		configMissing = true;
+	} catch(e) {
+		// if JSON is invalid
+		console.log(red('config.json is invalid. Please fix and try again.'));
+		process.exit();
 	}
-})();
+
+} else {
+	console.log(red('Your config.json is missing!!'));
+	configMissing = true;
+}
+// END INITIALIZATION ---------------------------
+
+
 
 const questions = [{
 	when: configMissing,
@@ -291,138 +295,149 @@ prompt(questions).then(answers => {
 		files.forEach(ifPHP);
 	}
 
-	(function abandon() {
-		if (createConfig === false) {
-			console.log(yellow('Please create your config.json file and try again. Aborting.'));
-			process.exit();
-		}
-	})();
 
-	(function createJSON() {
-		if (inputJSONinitials) {
-			let fileContent = `{\n\t"developer": "${inputJSONinitials}"\n}`,
-				filePath = `${cwd}/config.json`;
-			fs.writeFile(filePath, fileContent, configCreatedMessage);
-		}
-	})();
 
-	(function manipulation() {
-		originalNamespace = originalDir.substr(0, originalDir.indexOf('-'));
-		pathToOriginalDir = `${pathToSection}/${section}/${originalNamespace}/${originalDir}`;
-		pathToNewDev = `${pathToSection}/${section}/${devInitials}`;
+	// ABANDON ---------------------------
+	if (createConfig === false) {
+		console.log(yellow('Please create your config.json file and try again. Aborting.'));
+		process.exit();
+	}
+	// END ABANDON ---------------------------
 
-		if (inputJSONinitials) {
-			pathToNewDev = `${pathToSection}/${section}/${inputJSONinitials}`;
-		}
 
-		if (!fse.existsSync(pathToNewDev)) {
-			fse.mkdirSync(pathToNewDev);
-		}
 
-		// get array of existing dirs
-		fse.readdirSync(pathToNewDev).forEach(dir => existingDirs.push(dir));
+	// CREATE JSON ---------------------------
+	if (inputJSONinitials) {
+		let fileContent = `{\n\t"developer": "${inputJSONinitials}"\n}`,
+			filePath = `${cwd}/config.json`;
+		fs.writeFile(filePath, fileContent, configCreatedMessage);
+	}
+	// END CREATE JSON ---------------------------
 
-		// put array items in numerical order (so last item will have the greatest numerical value)
-		existingDirs.sort((a, b) => {
-			let firstItem = parseFloat(a.substring(a.indexOf('-') + 1, a.length)),
-				secondItem = parseFloat(b.substring(b.indexOf('-') + 1, b.length));
-			if (firstItem < secondItem) {
-		    return -1;
-		  }
-		  if (firstItem > secondItem) {
-		    return 1;
-		  }
-		  return 0;
+
+
+	// MANIPULATION ---------------------------
+	originalNamespace = originalDir.substr(0, originalDir.indexOf('-'));
+	pathToOriginalDir = `${pathToSection}/${section}/${originalNamespace}/${originalDir}`;
+	pathToNewDev = `${pathToSection}/${section}/${devInitials}`;
+
+	if (inputJSONinitials) {
+		pathToNewDev = `${pathToSection}/${section}/${inputJSONinitials}`;
+	}
+
+	if (!fse.existsSync(pathToNewDev)) {
+		fse.mkdirSync(pathToNewDev);
+	}
+
+	// get array of existing dirs
+	fse.readdirSync(pathToNewDev).forEach(dir => existingDirs.push(dir));
+
+	// put array items in numerical order (so last item will have the greatest numerical value)
+	existingDirs.sort((a, b) => {
+		let firstItem = parseFloat(a.substring(a.indexOf('-') + 1, a.length)),
+			secondItem = parseFloat(b.substring(b.indexOf('-') + 1, b.length));
+		if (firstItem < secondItem) {
+	    return -1;
+	  }
+	  if (firstItem > secondItem) {
+	    return 1;
+	  }
+	  return 0;
+	});
+
+	// find last existing dir
+	let lastDir = existingDirs[existingDirs.length - 1];
+
+	// get last suffix from array of existing dirs
+	lastSuffix = existingDirs.length === 0 ? "0" : lastDir.substring(lastDir.indexOf('-') + 1, lastDir.length);
+
+	// create array of numerically next suffixes
+	for (let i = 1; i <= howMany; i++) {
+		newSuffixes.push(parseFloat(lastSuffix) + i);
+	}
+
+	// convert array of numbers to array of strings
+	let suffixesStringy = newSuffixes.map(String);
+
+	function string(x) {
+		suffixesStringy.forEach(suffix => {
+			pathsToNewVariations.push(`${pathToNewDev}/${x}-${suffix.padStart(2, '0')}`);
 		});
+		newBranch = `${x}_${section}_${blurb}`;
+	}
 
-		// find last existing dir
-		let lastDir = existingDirs[existingDirs.length - 1];
+	if (devInitials) {
+		string(devInitials);
+	} else if (inputJSONinitials) {
+		string(inputJSONinitials);
+	}
+	// END MANIPULATION ---------------------------
 
-		// get last suffix from array of existing dirs
-		lastSuffix = existingDirs.length === 0 ? "0" : lastDir.substring(lastDir.indexOf('-') + 1, lastDir.length);
 
-		// create array of numerically next suffixes
-		for (let i = 1; i <= howMany; i++) {
-			newSuffixes.push(parseFloat(lastSuffix) + i);
-		}
 
-		// convert array of numbers to array of strings
-		let suffixesStringy = newSuffixes.map(String);
-
-		function string(x) {
-			suffixesStringy.forEach(suffix => {
-				pathsToNewVariations.push(`${pathToNewDev}/${x}-${suffix.padStart(2, '0')}`);
-			});
-			newBranch = `${x}_${section}_${blurb}`;
-		}
-
-		if (devInitials) {
-			string(devInitials);
-		} else if (inputJSONinitials) {
-			string(inputJSONinitials);
-		}
-	})();
-
-	(function checkBranch() {
-		if (!args.includes('--skip-git') && isGit === true) {
-			// check if the branch already exists locally
-			if (exec(`git rev-parse --verify --quiet \'${newBranch}\'`, {silent:true}).length > 0) {
-				console.log(yellow('ERROR: local branch already exists. Terminating process.'));
-				process.exit();
-			// check if the branch already exists remotely
-			} else if (exec(`git ls-remote --heads origin \'${newBranch}\'`, {silent:true}).length > 0) {
-				console.log(yellow('ERROR: remote branch already exists. Terminating process.'));
-				process.exit();
-			}
-		}
-	})();
-
-  (function toEachVariation() {
-		pathsToNewVariations.forEach(copyIt);
-  })();
-
-  (function rename() {
-		pathsToNewVariations.forEach(reading);
-  })();
-
-	(function message() {
-		let items = [];
-		pathsToNewVariations.forEach(variation => items.push(basename(variation)));
-		if (items.length > 0) {
-			console.log(yellow(`${howMany} variation${(items.length > 1) ? 's' : ''} created: ${items}.`));
-		} else {
-			// not sure if this is the best place for this error message
-			console.log(red('Something went wrong. Zero variations created.'));
+	// CHECK BRANCH ---------------------------
+	if (!args.includes('--skip-git') && isGit === true) {
+		// check if the branch already exists locally
+		if (exec(`git rev-parse --verify --quiet \'${newBranch}\'`, {silent:true}).length > 0) {
+			console.log(yellow('ERROR: local branch already exists. Terminating process.'));
+			process.exit();
+		// check if the branch already exists remotely
+		} else if (exec(`git ls-remote --heads origin \'${newBranch}\'`, {silent:true}).length > 0) {
+			console.log(yellow('ERROR: remote branch already exists. Terminating process.'));
 			process.exit();
 		}
-	})();
+	}
+	// END CHECK BRANCH ---------------------------
 
-	(function insertPHPComment() {
-		if (!args.includes('--skip-comment')) {
-			pathsToNewVariations.forEach(variation => {
-				fse.readdir(variation, forEachPHP);
-			});
-		}
-	})();
 
-	(function git() {
-		if (!args.includes('--skip-git') && isGit === true) {
-			try {
-				simpleGit()
-					.checkoutBranch(newBranch, 'master', (err, result) => {
-						console.log(yellow(`Switched to new branch ${newBranch}`));
-					})
-					.add('./*')
-					.commit(`copied ${originalDir}`, (err, result) => {
-						console.log(yellow('Changes staged and committed'));
-					})
-					.push(['-u', 'origin', `${newBranch}`], (err, result) => {
-						console.log(yellow('Pushed!'));
-					});
-			} catch (err) {
-				console.log(err);
-			}
+
+	pathsToNewVariations.forEach(copyIt);
+	pathsToNewVariations.forEach(reading);
+
+
+
+	// MESSAGING ---------------------------
+	let items = [];
+	pathsToNewVariations.forEach(variation => items.push(basename(variation)));
+	if (items.length > 0) {
+		console.log(yellow(`${howMany} variation${(items.length > 1) ? 's' : ''} created: ${items}.`));
+	} else {
+		// not sure if this is the best place for this error message
+		console.log(red('Something went wrong. Zero variations created.'));
+		process.exit();
+	}
+	// END MESSAGING ---------------------------
+
+
+
+	// PHP COMMENT ---------------------------
+	if (!args.includes('--skip-comment')) {
+		pathsToNewVariations.forEach(variation => {
+			fse.readdir(variation, forEachPHP);
+		});
+	}
+	// END PHP COMMENT ---------------------------
+
+
+
+	// GIT ---------------------------
+	if (!args.includes('--skip-git') && isGit === true) {
+		try {
+			simpleGit()
+				.checkoutBranch(newBranch, 'master', (err, result) => {
+					console.log(yellow(`Switched to new branch ${newBranch}`));
+				})
+				.add('./*')
+				.commit(`copied ${originalDir}`, (err, result) => {
+					console.log(yellow('Changes staged and committed'));
+				})
+				.push(['-u', 'origin', `${newBranch}`], (err, result) => {
+					console.log(yellow('Pushed!'));
+				});
+		} catch (err) {
+			console.log(err);
 		}
-	})();
+	}
+	// END GIT ---------------------------
 
 });
