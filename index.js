@@ -401,7 +401,7 @@ prompt(questions).then(answers => {
 			});
 		}
 		// END PHP COMMENT ---------------------------
-	}, 1000)
+	}, 50)
 
 
 
@@ -424,25 +424,27 @@ prompt(questions).then(answers => {
 
 
 
-
-	// GIT ---------------------------
-	if (!args.includes('--skip-git') && isGit === true) {
-		try {
-			simpleGit()
-				.checkoutBranch(newBranch, 'master', (err, result) => {
-					console.log(yellow(`Switched to new branch ${newBranch}`));
-				})
-				.add('./*')
-				.commit(`copied ${originalDir}`, (err, result) => {
-					console.log(yellow('Changes staged and committed'));
-				})
-				.push(['-u', 'origin', `${newBranch}`], (err, result) => {
-					console.log(yellow('Pushed!'));
-				});
-		} catch (err) {
-			console.log(err);
+	setTimeout(function () {
+		// GIT ---------------------------
+		if (!args.includes('--skip-git') && isGit === true) {
+			try {
+				simpleGit()
+					.checkoutBranch(newBranch, 'master', (err, result) => {
+						console.log(yellow(`Switched to new branch ${newBranch}`));
+					})
+					.add('./*')
+					.commit(`copied ${originalDir}`, (err, result) => {
+						console.log(yellow('Changes staged and committed'));
+					})
+					.push(['-u', 'origin', `${newBranch}`], (err, result) => {
+						console.log(yellow('Pushed!'));
+					});
+			} catch (err) {
+				console.log(err);
+			}
 		}
-	}
-	// END GIT ---------------------------
+		// END GIT ---------------------------
+	}, 50);
+
 
 });
