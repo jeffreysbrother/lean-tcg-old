@@ -246,54 +246,21 @@ prompt(questions).then(answers => {
 		if (err) throw err;
 	}
 
-	function replaceIt(file) {
-		let fullPath = `${variation}/${file}`,
-			newPart = basename(dirname(fullPath));
-		fs.rename(fullPath, fullPath.replace(originalDir, newPart), throwErr);
-	}
+
 
 	function skipHiddenFiles(files) {
 		files = files.filter(item => !(ignoreHiddenFiles).test(item));
 	}
 
-	function filterAndForEach(err, files) {
-		skipHiddenFiles(files);
-		files.forEach(replaceIt);
-		console.log(files);
-		process.exit();
-	}
 
-	function reading(variation) {
-		fse.readdirSync(variation, filterAndForEach);
-	}
 
-	function writingAndAppending(err, data) {
-		if (err) throw err;
-		if (data.indexOf('<!-- copied from') >= 0) {
-			let commentRegEx = /(\<\!\-{2}\scopied\sfrom\s.{0,6}\s\-{2}\>)/g,
-				replacement = data.replace(commentRegEx, `<!-- copied from ${originalDir} -->`);
-			fs.writeFile(newFile, replacement, 'utf8', throwErr);
-			// log this message only once
-			if (fileToReplace === true) {
-				console.log(yellow('existing comment replaced.'));
-				fileToReplace = false;
-			}
-		} else {
-			fs.appendFileSync(newFile, `<!-- copied from ${originalDir} -->`);
-		}
-	}
 
-	function ifPHP(variation, file) {
-		let newFile = `${variation}/${file}`;
-		if (extname(newFile) === '.php') {
-			fs.readFile(newFile, 'utf8', writingAndAppending);
-		}
-	}
 
-	function forEachPHP(err, files) {
-		skipHiddenFiles(files);
-		files.forEach(ifPHP);
-	}
+
+
+
+
+
 
 
 
@@ -392,7 +359,51 @@ prompt(questions).then(answers => {
 
 
 	pathsToNewVariations.forEach(copyIt);
-	pathsToNewVariations.forEach(reading);
+
+	pathsToNewVariations.forEach(variation => {
+		fse.readdir(variation, (err, files) => {
+			skipHiddenFiles(files);
+			files.forEach(file => {
+				let fullPath = `${variation}/${file}`,
+					newPart = basename(dirname(fullPath));
+				fs.rename(fullPath, fullPath.replace(originalDir, newPart), throwErr);
+			});
+		});
+	});
+
+	setTimeout(function() {
+		// PHP COMMENT ---------------------------
+		if (!args.includes('--skip-comment')) {
+			pathsToNewVariations.forEach(variation => {
+				fse.readdir(variation, (err, files) => {
+					skipHiddenFiles(files);
+					files.forEach(file => {
+						let newFile = `${variation}/${file}`;
+						if (extname(newFile) === '.php') {
+							fs.readFile(newFile, 'utf8', (err, data) => {
+								if (err) throw err;
+								if (data.indexOf('<!-- copied from') >= 0) {
+									let commentRegEx = /(\<\!\-{2}\scopied\sfrom\s.{0,6}\s\-{2}\>)/g,
+										replacement = data.replace(commentRegEx, `<!-- copied from ${originalDir} -->`);
+									fs.writeFile(newFile, replacement, 'utf8', throwErr);
+									// log this message only once
+									if (fileToReplace === true) {
+										console.log(yellow('existing comment replaced.'));
+										fileToReplace = false;
+									}
+								} else {
+									fs.appendFileSync(newFile, `<!-- copied from ${originalDir} -->`);
+								}
+							});
+						}
+					});
+				});
+			});
+		}
+		// END PHP COMMENT ---------------------------
+	}, 1000)
+
+
 
 
 
@@ -410,13 +421,7 @@ prompt(questions).then(answers => {
 
 
 
-	// PHP COMMENT ---------------------------
-	if (!args.includes('--skip-comment')) {
-		pathsToNewVariations.forEach(variation => {
-			fse.readdir(variation, forEachPHP);
-		});
-	}
-	// END PHP COMMENT ---------------------------
+
 
 
 
