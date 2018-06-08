@@ -318,7 +318,22 @@ prompt(questions).then(answers => {
 		suffixesStringy.forEach(suffix => {
 			pathsToNewVariations.push(`${pathToNewDev}/${x}-${suffix.padStart(2, '0')}`);
 		});
-		newBranch = `${x}_${section}_${blurb}`;
+		// if first character is a slash
+		if (section.charAt(0) === '/') {
+			// remove initial slashes
+			let sectionNoSlashes = section.replace(/^(\/)+/, '');
+			if (sectionNoSlashes.includes('/')) {
+				newBranch = `${x}_${sectionNoSlashes.substring(0, sectionNoSlashes.indexOf('/'))}_${blurb}`;
+			} else {
+				newBranch = `${x}_${sectionNoSlashes}_${blurb}`;
+			}
+		} else {
+			if (section.includes('/')) {
+				newBranch = `${x}_${section.substring(0, section.indexOf('/'))}_${blurb}`;
+			} else {
+				newBranch = `${x}_${section}_${blurb}`;
+			}
+		}
 	}
 
 	if (devInitials) {
